@@ -47,10 +47,23 @@ RUN cd custom_nodes && \
     cd ComfyUI-LTXVideo && \
     pip install -r requirements.txt 2>/dev/null || true
 
-# Install ComfyUI-VideoHelperSuite for video I/O (LoadVideo, SaveVideo, CreateVideo)
+# Install ComfyUI-VideoHelperSuite for video I/O (VHS_VideoCombine)
 RUN cd custom_nodes && \
     git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git && \
     cd ComfyUI-VideoHelperSuite && \
+    pip install -r requirements.txt 2>/dev/null || true
+
+# Install ComfyUI-KJNodes (SimpleCalculatorKJ, ImageResizeKJv2, VAELoaderKJ,
+# ResizeImagesByLongerEdge, SetNode/GetNode routing)
+RUN cd custom_nodes && \
+    git clone https://github.com/kijai/ComfyUI-KJNodes.git && \
+    cd ComfyUI-KJNodes && \
+    pip install -r requirements.txt 2>/dev/null || true
+
+# Install rgthree-comfy (Power Lora Loader for multi-LoRA support)
+RUN cd custom_nodes && \
+    git clone https://github.com/rgthree/rgthree-comfy.git && \
+    cd rgthree-comfy && \
     pip install -r requirements.txt 2>/dev/null || true
 
 RUN pip cache purge
@@ -80,34 +93,51 @@ ARG HUGGINGFACE_ACCESS_TOKEN
 WORKDIR /comfyui
 
 # Create model directories
-RUN mkdir -p models/checkpoints models/text_encoders models/loras \
+RUN mkdir -p models/diffusion_models models/text_encoders models/loras \
     models/latent_upscale_models models/vae models/vae_approx
 
-# Download LTX 2.3 checkpoint (FP8 quantized ~22GB)
-RUN wget -nv -O models/checkpoints/ltx-2.3-22b-dev-fp8.safetensors \
-    https://huggingface.co/Lightricks/LTX-2.3-fp8/resolve/main/ltx-2.3-22b-dev-fp8.safetensors
+# ── Core Models (from Jef's workflow) ──
 
-# Download Gemma 3 text encoder (~6GB)
-RUN wget -nv -O models/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors \
-    https://huggingface.co/Comfy-Org/ltx-2/resolve/main/gemma_3_12B_it_fp4_mixed.safetensors
+# Distilled transformer-only FP8 (~11GB) — NOT the dev checkpoint
+RUN wget -nv -O models/diffusion_models/ltx-2.3-22b-distilled_transformer_only_fp8_scaled.safetensors \
+    https://huggingface.co/Kijai/LTX2.3_comfy/resolve/main/diffusion_models/ltx-2.3-22b-distilled_transformer_only_fp8_scaled.safetensors
 
-# Download distilled LoRA (for two-stage pipeline)
-RUN wget -nv -O models/loras/ltx-2.3-22b-distilled-lora-384.safetensors \
-    https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-22b-distilled-lora-384.safetensors
+# Gemma 3 12B text encoder — mixed precision (higher quality than fp4)
+RUN wget -nv -O models/text_encoders/gemma_3_12B_it_fpmixed.safetensors \
+    https://huggingface.co/Comfy-Org/ltx-2/resolve/main/split_files/text_encoders/gemma_3_12B_it_fpmixed.safetensors
 
-# Download spatial upscaler 2x
-RUN wget -nv -O models/latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.1.safetensors \
+# LTX 2.3 text projection for DualCLIPLoader (~2.3GB)
+RUN wget -nv -O models/text_encoders/ltx-2.3_text_projection_bf16.safetensors \
+    https://huggingface.co/Kijai/LTX2.3_comfy/resolve/main/text_encoders/ltx-2.3_text_projection_bf16.safetensors
+
+# Video VAE (~1.5GB)
+RUN wget -nv -O models/vae/LTX23_video_vae_bf16.safetensors \
+    https://huggingface.co/Kijai/LTX2.3_comfy/resolve/main/vae/LTX23_video_vae_bf16.safetensors
+
+# Audio VAE (~365MB) — optional audio generation
+RUN wget -nv -O models/vae/LTX23_audio_vae_bf16.safetensors \
+    https://huggingface.co/Kijai/LTX2.3_comfy/resolve/main/vae/LTX23_audio_vae_bf16.safetensors
+
+# ── Upscaler ──
+
+# Spatial upscaler 2x — ship both v1.0 (Jef uses) and v1.1 (hotfix for long videos)
+RUN wget -nv -O models/latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.0.safetensors \
+    https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-spatial-upscaler-x2-1.0.safetensors && \
+    wget -nv -O models/latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.1.safetensors \
     https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-spatial-upscaler-x2-1.1.safetensors
 
-# Download TAESD for LTX 2.3 (tiny VAE for fast ~240px preview during render)
-# The "wide" variant produces less blurry previews
+# ── TAESD Preview (tiny VAE for fast ~240px preview during render) ──
+
 RUN wget -nv -O models/vae_approx/taeltx2_3.safetensors \
     https://github.com/madebyollin/taehv/raw/main/safetensors/taeltx2_3.safetensors && \
     wget -nv -O models/vae_approx/taeltx2_3_wide.safetensors \
     https://github.com/madebyollin/taehv/raw/main/safetensors/taeltx2_3_wide.safetensors
 
-# Download camera control LoRAs (from LTX-2 19b — partially compatible with 2.3)
-RUN wget -nv -O models/loras/ltx-2-19b-lora-camera-control-dolly-in.safetensors \
+# ── Camera LoRAs (LTX-2 19b, partially compatible with 2.3) ──
+
+RUN wget -nv -O models/loras/ltx-2-19b-lora-camera-control-static.safetensors \
+    https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Static/resolve/main/ltx-2-19b-lora-camera-control-static.safetensors && \
+    wget -nv -O models/loras/ltx-2-19b-lora-camera-control-dolly-in.safetensors \
     https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-In/resolve/main/ltx-2-19b-lora-camera-control-dolly-in.safetensors && \
     wget -nv -O models/loras/ltx-2-19b-lora-camera-control-dolly-out.safetensors \
     https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Out/resolve/main/ltx-2-19b-lora-camera-control-dolly-out.safetensors && \
@@ -118,8 +148,6 @@ RUN wget -nv -O models/loras/ltx-2-19b-lora-camera-control-dolly-in.safetensors 
     wget -nv -O models/loras/ltx-2-19b-lora-camera-control-jib-up.safetensors \
     https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Jib-Up/resolve/main/ltx-2-19b-lora-camera-control-jib-up.safetensors && \
     wget -nv -O models/loras/ltx-2-19b-lora-camera-control-jib-down.safetensors \
-    https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Jib-Down/resolve/main/ltx-2-19b-lora-camera-control-jib-down.safetensors && \
-    wget -nv -O models/loras/ltx-2-19b-lora-camera-control-static.safetensors \
-    https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Static/resolve/main/ltx-2-19b-lora-camera-control-static.safetensors
+    https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Jib-Down/resolve/main/ltx-2-19b-lora-camera-control-jib-down.safetensors
 
 CMD ["/start.sh"]
