@@ -127,9 +127,7 @@ RUN wget -nv -O models/latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.0.saf
 # ── TAESD Preview (tiny VAE for fast ~240px preview during render) ──
 
 RUN wget -nv -O models/vae_approx/taeltx2_3.safetensors \
-    https://github.com/madebyollin/taehv/raw/main/safetensors/taeltx2_3.safetensors && \
-    wget -nv -O models/vae_approx/taeltx2_3_wide.safetensors \
-    https://github.com/madebyollin/taehv/raw/main/safetensors/taeltx2_3_wide.safetensors
+    https://github.com/madebyollin/taehv/raw/main/safetensors/taeltx2_3.safetensors
 
 # ── Camera LoRAs (LTX-2 19b, partially compatible with 2.3) ──
 
