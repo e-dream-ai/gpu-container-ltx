@@ -88,8 +88,6 @@ CMD ["/start.sh"]
 # Stage 2: Download models
 FROM base AS final
 
-ARG HUGGINGFACE_ACCESS_TOKEN
-
 WORKDIR /comfyui
 
 # Create model directories
