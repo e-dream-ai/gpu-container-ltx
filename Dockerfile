@@ -1,5 +1,5 @@
 # Stage 1: Base image with ComfyUI + LTX 2.3 dependencies
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PIP_PREFER_BINARY=1
@@ -28,11 +28,11 @@ RUN pip install comfy-cli
 
 # Pre-install PyTorch with CUDA 12.4 support
 RUN pip install torch torchvision torchaudio \
-    --index-url https://download.pytorch.org/whl/cu124
+    --index-url https://download.pytorch.org/whl/cu128
 
 # Install ComfyUI
 RUN /usr/bin/yes | comfy --workspace /comfyui install \
-    --cuda-version 12.4 --nvidia --skip-torch-or-directml
+    --cuda-version 12.8 --nvidia --skip-torch-or-directml
 
 RUN comfy tracking disable
 
