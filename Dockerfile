@@ -96,9 +96,18 @@ RUN mkdir -p models/diffusion_models models/text_encoders models/loras \
 
 # ── Core Models (from Jef's workflow) ──
 
-# Distilled transformer-only FP8 (~11GB) — NOT the dev checkpoint
-RUN wget -nv -O models/diffusion_models/ltx-2.3-22b-distilled_transformer_only_fp8_scaled.safetensors \
-    https://huggingface.co/Kijai/LTX2.3_comfy/resolve/main/diffusion_models/ltx-2.3-22b-distilled_transformer_only_fp8_scaled.safetensors
+# Full (dev, non-distilled) transformer-only FP8 (~11GB).
+# Switched from the distilled checkpoint so the LTX-2 19b camera-control LoRAs
+# actually bind — they produce no key matches on the distilled 22b model and
+# silently fall back to base-model output (no camera motion).
+# The dev model is paired with the distill LoRA below (Jef's "ONLY if you use
+# DEV model" node) so it still samples few-step LCM at cfg 1.
+RUN wget -nv -O models/diffusion_models/ltx-2.3-22b-dev_transformer_only_fp8_scaled.safetensors \
+    https://huggingface.co/Kijai/LTX2.3_comfy/resolve/main/diffusion_models/ltx-2.3-22b-dev_transformer_only_fp8_scaled.safetensors
+
+# Distill LoRA — restores few-step LCM sampling on the dev transformer.
+RUN wget -nv -O models/loras/ltx-2-19b-distilled-lora-384.safetensors \
+    https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-distilled-lora-384.safetensors
 
 # Gemma 3 12B text encoder — mixed precision (higher quality than fp4)
 RUN wget -nv -O models/text_encoders/gemma_3_12B_it_fpmixed.safetensors \
@@ -129,7 +138,8 @@ RUN wget -nv -O models/latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.0.saf
 RUN wget -nv -O models/vae_approx/taeltx2_3.safetensors \
     https://github.com/madebyollin/taehv/raw/main/safetensors/taeltx2_3.safetensors
 
-# ── Camera LoRAs (LTX-2 19b, partially compatible with 2.3) ──
+# ── Camera LoRAs (LTX-2 19b) ──
+# These bind to the full (dev) 22b transformer above, not the distilled one.
 
 RUN wget -nv -O models/loras/ltx-2-19b-lora-camera-control-static.safetensors \
     https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Static/resolve/main/ltx-2-19b-lora-camera-control-static.safetensors && \
