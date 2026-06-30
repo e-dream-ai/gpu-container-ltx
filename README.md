@@ -2,13 +2,14 @@
 
 RunPod serverless container for LTX 2.3 video generation via ComfyUI.
 
-Based on Jef's workflow — two-pass I2V with LCM sampler, spatial upscaling, and audio generation.
+Based on Jef's workflow — two-pass I2V with LCM sampler, spatial upscaling, and audio generation. Runs the full (dev) transformer + distill LoRA so the camera-control LoRAs bind while keeping fast few-step LCM sampling.
 
 ## Models Included
 
 | Model | Size | Source | Purpose |
 |-------|------|--------|---------|
-| `ltx-2.3-22b-distilled_transformer_only_fp8_scaled.safetensors` | ~11GB | Kijai/LTX2.3_comfy | Distilled transformer (FP8) |
+| `ltx-2.3-22b-dev_transformer_only_fp8_scaled.safetensors` | ~11GB | Kijai/LTX2.3_comfy | Full (dev) transformer (FP8) — camera LoRAs bind to this |
+| `ltx-2-19b-distilled-lora-384.safetensors` | ~?GB | Lightricks/LTX-2 | Distill LoRA @ 0.6 — restores few-step LCM on the dev transformer |
 | `gemma_3_12B_it_fpmixed.safetensors` | ~6GB | Comfy-Org/ltx-2 | Text encoder (mixed precision) |
 | `ltx-2.3_text_projection_bf16.safetensors` | ~2.3GB | Kijai/LTX2.3_comfy | Text projection for DualCLIPLoader |
 | `LTX23_video_vae_bf16.safetensors` | ~1.5GB | Kijai/LTX2.3_comfy | Video VAE |
@@ -21,7 +22,7 @@ Based on Jef's workflow — two-pass I2V with LCM sampler, spatial upscaling, an
 
 ```
 Pass 1 — Low-res generation (704x512, 121 frames):
-  UNETLoader → Power Lora Loader (camera LoRA @ 0.4)
+  UNETLoader → LoraLoaderModelOnly (distill LoRA @ 0.6) → Power Lora Loader (camera LoRA @ 0.4)
   DualCLIPLoader → CLIPTextEncode → LTXVConditioning
   LoadImage → LTXVPreprocess → LTXVImgToVideoInplace
   EmptyLTXVLatentVideo + LTXVEmptyLatentAudio → LTXVConcatAVLatent
@@ -54,6 +55,7 @@ Output:
 - CFG: 1.0
 - Pass 1 scheduler: LTXVScheduler (steps=8, max_shift=2.05, min_shift=0.95)
 - Pass 2 scheduler: ManualSigmas (0.909375, 0.725, 0.421875, 0.0)
+- Distill LoRA: `ltx-2-19b-distilled-lora-384` @ 0.6 (enables few-step LCM on dev model)
 - Camera LoRA: static @ 0.4 strength (default)
 - Output: 24fps, H.264, CRF 19
 

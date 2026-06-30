@@ -3,7 +3,7 @@
     "workflow": {
       "1": {
         "inputs": {
-          "unet_name": "ltx-2.3-22b-distilled_transformer_only_fp8_scaled.safetensors",
+          "unet_name": "ltx-2.3-22b-dev_transformer_only_fp8_scaled.safetensors",
           "weight_dtype": "default"
         },
         "class_type": "UNETLoader"
@@ -36,9 +36,17 @@
         },
         "class_type": "LatentUpscaleModelLoader"
       },
-      "6": {
+      "7": {
         "inputs": {
           "model": ["1", 0],
+          "lora_name": "ltx-2-19b-distilled-lora-384.safetensors",
+          "strength_model": 0.6
+        },
+        "class_type": "LoraLoaderModelOnly"
+      },
+      "6": {
+        "inputs": {
+          "model": ["7", 0],
           "lora_01": {
             "on": true,
             "lora": "ltx-2-19b-lora-camera-control-static.safetensors",
