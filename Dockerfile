@@ -106,8 +106,16 @@ RUN wget -nv -O models/diffusion_models/ltx-2.3-22b-dev_transformer_only_fp8_sca
     https://huggingface.co/Kijai/LTX2.3_comfy/resolve/main/diffusion_models/ltx-2.3-22b-dev_transformer_only_fp8_scaled.safetensors
 
 # Distill LoRA — restores few-step LCM sampling on the dev transformer.
-RUN wget -nv -O models/loras/ltx-2-19b-distilled-lora-384.safetensors \
-    https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-distilled-lora-384.safetensors
+# MUST be the 2.3/22b build, not the LTX-2 19b one. The 19b LoRA is 99% key-
+# compatible with the 22b transformer, so it loads almost silently, but the two
+# modules it cannot bind are the adaLN modulation layers that drive every block:
+#   adaln_single.linear        lora [24576, 4096] vs model [36864, 4096]
+#   audio_adaln_single.linear  lora [12288, 2048] vs model [18432, 2048]
+# ComfyUI logs a shape error for those and applies the other 1364 modules anyway,
+# leaving a half-distilled model: blocks adapted for few-step sampling, driven by
+# unpatched modulation. At 8+3 LCM steps / cfg 1 that degrades the video.
+RUN wget -nv -O models/loras/ltx-2.3-22b-distilled-lora-384.safetensors \
+    https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-22b-distilled-lora-384.safetensors
 
 # Gemma 3 12B text encoder — mixed precision (higher quality than fp4)
 RUN wget -nv -O models/text_encoders/gemma_3_12B_it_fpmixed.safetensors \

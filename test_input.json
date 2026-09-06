@@ -39,7 +39,7 @@
       "7": {
         "inputs": {
           "model": ["1", 0],
-          "lora_name": "ltx-2-19b-distilled-lora-384.safetensors",
+          "lora_name": "ltx-2.3-22b-distilled-lora-384.safetensors",
           "strength_model": 0.6
         },
         "class_type": "LoraLoaderModelOnly"
