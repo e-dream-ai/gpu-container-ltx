@@ -14,7 +14,7 @@ Based on Jef's workflow — two-pass I2V with LCM sampler, spatial upscaling, an
 | `ltx-2.3_text_projection_bf16.safetensors` | ~2.3GB | Kijai/LTX2.3_comfy | Text projection for DualCLIPLoader |
 | `LTX23_video_vae_bf16.safetensors` | ~1.5GB | Kijai/LTX2.3_comfy | Video VAE |
 | `LTX23_audio_vae_bf16.safetensors` | ~365MB | Kijai/LTX2.3_comfy | Audio VAE |
-| `ltx-2.3-spatial-upscaler-x2-{1.0,1.1}.safetensors` | ~1GB each | Lightricks/LTX-2.3 | 2x latent upscaler (v1.0 + v1.1 hotfix) |
+| `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` | ~1GB | Lightricks/LTX-2.3 | 2x latent upscaler with the hotfix for long videos |
 | `taeltx2_3{,_wide}.safetensors` | ~50MB each | madebyollin/taehv | TAESD for fast preview during render |
 | 7x camera control LoRAs | ~100MB each | Lightricks | Dolly in/out/left/right, jib up/down, static |
 

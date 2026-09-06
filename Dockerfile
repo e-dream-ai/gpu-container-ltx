@@ -135,10 +135,8 @@ RUN wget -nv -O models/vae/LTX23_audio_vae_bf16.safetensors \
 
 # ── Upscaler ──
 
-# Spatial upscaler 2x — ship both v1.0 (Jef uses) and v1.1 (hotfix for long videos)
-RUN wget -nv -O models/latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.0.safetensors \
-    https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-spatial-upscaler-x2-1.0.safetensors && \
-    wget -nv -O models/latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.1.safetensors \
+# Spatial upscaler 2x — v1.1 includes the hotfix for long videos.
+RUN wget -nv -O models/latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.1.safetensors \
     https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-spatial-upscaler-x2-1.1.safetensors
 
 # ── TAESD Preview (tiny VAE for fast ~240px preview during render) ──
